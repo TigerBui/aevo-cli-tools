@@ -19,15 +19,20 @@ Sau đó, bạn chỉ cần gõ:
 sudo aevo
 ```
 
-## ⚡ Cài đặt "1-Click" từ Web
+## ⚡ Cài đặt "1-Click" từ Web (Cloud Installer)
 Nếu bạn vừa tạo một VPS mới và muốn cài nhanh toàn bộ công cụ này CHỈ VỚI 1 LỆNH duy nhất, hãy chạy:
 
 ```bash
 curl -sL https://url-den-file-cua-ban/1click_install_web.sh | sudo bash
 ```
-*(Yêu cầu: Bạn cần trỏ URL trên về file `1click_install_web.sh` mà bạn tự host).*
 
-Ngay sau khi lệnh chạy xong, bạn có thể sử dụng ngay lập tức:
+**Cách thiết lập mô hình 1-Click của riêng bạn:**
+1. Trên máy tính cá nhân/server nội bộ, chạy lệnh `./build.sh`. Script sẽ tự động đóng gói dự án thành một file nén nhỏ gọn tên là `aevo-cli.tar.gz`.
+2. Upload file `aevo-cli.tar.gz` này lên trình lưu trữ web hoặc tính năng Releases của GitHub.
+3. Mở file `1click_install_web.sh`, thay đổi đường dẫn ở dòng `TARBALL_URL="..."` thành URL tải file nén trực tiếp vừa upload.
+4. Cung cấp (host) file `1click_install_web.sh` đó công khai, dùng địa chỉ công khai đó để điền vào câu lệnh `curl` ở đầu bài.
+
+Ngay sau khi lệnh cài đặt chạy xong, bạn có thể sử dụng ngay lập tức:
 ```bash
 sudo aevo
 ```

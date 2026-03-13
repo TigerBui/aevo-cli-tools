@@ -7,7 +7,7 @@ set -euo pipefail
 
 # --- Configuration ---
 # UPDATE THIS URL to point to the raw location of the aevo-cli.tar.gz file you host.
-TARBALL_URL="https://YOUR-DOMAIN-OR-GITHUB-RELEASES/aevo-cli.tar.gz"
+TARBALL_URL="https://github.com/TigerBui/aevo-cli-tools/releases/download/aevo-cli/aevo-cli.tar.gz"
 INSTALL_DIR="/opt/aevo"
 
 GREEN='\033[0;32m'
