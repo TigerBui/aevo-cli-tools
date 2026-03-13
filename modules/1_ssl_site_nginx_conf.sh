@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 # TITLE: Nginx Site SSL Configurer
 # DESC: Tạo nhanh cấu hình vhost Nginx hỗ trợ SSL và tự động chuyển hướng HTTP sang HTTPS.
 set -euo pipefail
@@ -11,8 +12,23 @@ set -euo pipefail
 #   sudo ./ssl_site_nginx_conf.sh hobinh.io.vn admin@hobinh.io.vn
 # =========================================================
 
-DOMAIN="${1:?Domain không được để trống}"
-EMAIL="${2:-admin@${DOMAIN}}"
+DOMAIN="${1:-}"
+if [[ -z "$DOMAIN" ]]; then
+    read -p "Nhập tên miền (domain), ví dụ: example.com: " DOMAIN
+    if [[ -z "$DOMAIN" ]]; then
+        echo -e "\033[0;31m✗ Lỗi: Tên miền không được để trống.\033[0m"
+        exit 1
+    fi
+fi
+
+EMAIL="${2:-}"
+if [[ -z "$EMAIL" ]]; then
+    read -p "Nhập email cho SSL, ví dụ: admin@example.com: " EMAIL
+    if [[ -z "$EMAIL" ]]; then
+        echo -e "\033[0;31m✗ Lỗi: Email không được để trống.\033[0m"
+        exit 1
+    fi
+fi
 
 SITE_CONF="/etc/nginx/sites-available/${DOMAIN}.conf"
 NGINX_USER="$(ps -o user= -C nginx 2>/dev/null | grep -v root | head -n1 || echo www-data)"
@@ -27,6 +43,24 @@ err()  { echo -e "[ERROR] $*"; }
 # ================== FIX SSL PERMISSIONS ==================
 fix_ssl_permissions() {
     info "Fix permissions thư mục Let's Encrypt"
+
+    # Kiểm tra và cài certbot nếu chưa có
+    if ! command -v certbot &>/dev/null; then
+        warn "Certbot chưa được cài đặt. Đang cài..."
+        apt-get update -y && apt-get install -y certbot python3-certbot-nginx
+        ok "Đã cài đặt certbot"
+    fi
+
+    # Nếu chưa có thư mục letsencrypt → cần xin certificate trước
+    if [[ ! -d "/etc/letsencrypt" ]]; then
+        info "Chưa có chứng chỉ SSL. Đang xin certificate cho $DOMAIN..."
+        certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --email "$EMAIL" --agree-tos --non-interactive || {
+            err "Không thể xin chứng chỉ SSL. Vui lòng kiểm tra DNS và thử lại."
+            return 1
+        }
+        ok "Đã xin chứng chỉ SSL thành công"
+    fi
+
     # Tạo group nếu chưa có
     getent group "$GROUP_NAME" >/dev/null || groupadd "$GROUP_NAME"
     # Thêm nginx user vào group

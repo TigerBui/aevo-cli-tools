@@ -1,0 +1,3 @@
+# Bắt buộc Git luôn lưu trữ và checkout các file .sh dưới dạng LF (Unix)
+# Giúp tránh lỗi "invalid option" khi chạy trên Linux/Ubuntu
+*.sh text eol=lf

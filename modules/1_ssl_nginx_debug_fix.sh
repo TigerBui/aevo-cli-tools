@@ -11,8 +11,23 @@ set -euo pipefail
 
 # ================== CONFIG ==================
 GROUP_NAME="letsencrypt-access"
-DOMAIN="${1:-hobinh.io.vn}"
-EMAIL="${2:-admin@${DOMAIN}}"
+DOMAIN="${1:-}"
+if [[ -z "$DOMAIN" ]]; then
+    read -p "Nhập tên miền (domain), ví dụ: example.com: " DOMAIN
+    if [[ -z "$DOMAIN" ]]; then
+        echo -e "\033[0;31m✗ Lỗi: Tên miền không được để trống.\033[0m"
+        exit 1
+    fi
+fi
+
+EMAIL="${2:-}"
+if [[ -z "$EMAIL" ]]; then
+    read -p "Nhập email cho SSL, ví dụ: admin@example.com: " EMAIL
+    if [[ -z "$EMAIL" ]]; then
+        echo -e "\033[0;31m✗ Lỗi: Email không được để trống.\033[0m"
+        exit 1
+    fi
+fi
 
 LETSENCRYPT_DIRS=(
   "/etc/letsencrypt"
@@ -135,6 +150,23 @@ fix_permissions() {
     echo "│                  AUTO FIX SSL + NGINX CONFIG                 │"
     echo "└──────────────────────────────────────────────────────────────┘"
 
+    # 0. Kiểm tra và cài certbot nếu chưa có
+    if ! command -v certbot &>/dev/null; then
+        warn "Certbot chưa được cài đặt. Đang cài..."
+        apt-get update -y && apt-get install -y certbot python3-certbot-nginx
+        ok "Đã cài đặt certbot"
+    fi
+
+    # 0.1 Nếu chưa có certificate → xin mới
+    if [[ ! -d "/etc/letsencrypt/live/$DOMAIN" ]]; then
+        info "Chưa có chứng chỉ SSL cho $DOMAIN. Đang xin certificate..."
+        certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --email "$EMAIL" --agree-tos --non-interactive || {
+            err "Không thể xin chứng chỉ SSL. Vui lòng kiểm tra DNS trỏ đúng IP server và thử lại."
+            return 1
+        }
+        ok "Đã xin chứng chỉ SSL thành công cho $DOMAIN"
+    fi
+
     # 1. Tạo group nếu chưa có
     if ! getent group "$GROUP_NAME" >/dev/null; then
         groupadd "$GROUP_NAME"
@@ -207,7 +239,24 @@ fix_permissions() {
 }
 
 # ================== MAIN ==================
-MODE="${3:-check}"
+MODE="${3:-}"
+
+# Nếu không có tham số MODE → hỏi người dùng chọn
+if [[ -z "$MODE" ]]; then
+    echo ""
+    echo -e "Chọn chế độ chạy:"
+    echo -e "  1. Kiểm tra (Check only)"
+    echo -e "  2. Tự động sửa lỗi (Auto-Fix)"
+    echo -e "  0. Thoát"
+    echo ""
+    read -p "Lựa chọn của bạn (0-2): " mode_choice
+    case "$mode_choice" in
+        1) MODE="check" ;;
+        2) MODE="--auto" ;;
+        0) echo "Thoát."; exit 0 ;;
+        *) echo "Lựa chọn không hợp lệ, mặc định: check"; MODE="check" ;;
+    esac
+fi
 
 case "$MODE" in
     --auto)
